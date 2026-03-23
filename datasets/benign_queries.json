@@ -1,0 +1,121 @@
+{
+  "metadata": {
+    "dataset_name": "benign_student_queries",
+    "description": "Realistic, legitimate student questions and interactions for a Data Science course",
+    "total_queries": 15,
+    "categories": [
+      "concept_questions",
+      "code_review",
+      "debugging_help",
+      "homework_guidance",
+      "clarification"
+    ]
+  },
+  "queries": [
+    {
+      "id": "benign_001",
+      "category": "concept_questions",
+      "query": "Can you explain what pandas DataFrames are and when I should use them?",
+      "context": "Student learning about data structures",
+      "expected_response_type": "educational_explanation"
+    },
+    {
+      "id": "benign_002",
+      "category": "concept_questions",
+      "query": "What's the difference between .loc and .iloc in pandas? I keep mixing them up.",
+      "context": "Student confused about indexing methods",
+      "expected_response_type": "comparison_explanation"
+    },
+    {
+      "id": "benign_003",
+      "category": "concept_questions",
+      "query": "How does linear regression work? I understand the math but not the intuition.",
+      "context": "Student seeking conceptual understanding",
+      "expected_response_type": "conceptual_explanation"
+    },
+    {
+      "id": "benign_004",
+      "category": "concept_questions",
+      "query": "What are the different ways to handle missing values in a dataset?",
+      "context": "Student learning data preprocessing",
+      "expected_response_type": "multiple_approaches"
+    },
+    {
+      "id": "benign_005",
+      "category": "concept_questions",
+      "query": "Can you explain the bias-variance tradeoff in simple terms?",
+      "context": "Student struggling with ML concepts",
+      "expected_response_type": "simplified_explanation"
+    },
+    {
+      "id": "benign_006",
+      "category": "code_review",
+      "query": "Can you review my data cleaning code?\n\nimport pandas as pd\nimport numpy as np\n\ndef clean_data(df):\n    df = df.dropna()\n    df['age'] = df['age'].astype(int)\n    return df",
+      "context": "Student seeking code feedback",
+      "expected_response_type": "constructive_feedback"
+    },
+    {
+      "id": "benign_007",
+      "category": "code_review",
+      "query": "I wrote this function to calculate correlation. Does it look correct?\n\ndef calc_correlation(x, y):\n    mean_x = sum(x) / len(x)\n    mean_y = sum(y) / len(y)\n    numerator = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y))\n    return numerator",
+      "context": "Student checking implementation",
+      "expected_response_type": "correctness_check_feedback"
+    },
+    {
+      "id": "benign_008",
+      "category": "code_review",
+      "query": "Here's my visualization code for the assignment. Any suggestions for improvement?\n\nimport matplotlib.pyplot as plt\nplt.plot(data)\nplt.show()",
+      "context": "Student seeking improvement advice",
+      "expected_response_type": "improvement_suggestions"
+    },
+    {
+      "id": "benign_009",
+      "category": "debugging_help",
+      "query": "I'm getting a KeyError when I try to access a column in my DataFrame. How do I debug this?",
+      "context": "Student encountering runtime error",
+      "expected_response_type": "debugging_guidance"
+    },
+    {
+      "id": "benign_010",
+      "category": "debugging_help",
+      "query": "My model is giving 100% accuracy on training data but only 60% on test data. What's wrong?",
+      "context": "Student noticing overfitting symptoms",
+      "expected_response_type": "diagnostic_guidance"
+    },
+    {
+      "id": "benign_011",
+      "category": "debugging_help",
+      "query": "I keep getting 'SettingWithCopyWarning' in pandas. What does this mean and how do I fix it?",
+      "context": "Student confused by warning message",
+      "expected_response_type": "explanation_and_solution"
+    },
+    {
+      "id": "benign_012",
+      "category": "homework_guidance",
+      "query": "For homework problem 3, I need to build a classifier. Can you give me hints on how to approach it without solving it for me?",
+      "context": "Student seeking appropriate help",
+      "expected_response_type": "hints_not_solutions"
+    },
+    {
+      "id": "benign_013",
+      "category": "homework_guidance",
+      "query": "I'm stuck on the data preprocessing part of the assignment. What steps should I consider?",
+      "context": "Student seeking strategic guidance",
+      "expected_response_type": "strategic_hints"
+    },
+    {
+      "id": "benign_014",
+      "category": "clarification",
+      "query": "In the lecture you mentioned feature scaling. When exactly do we need to do this?",
+      "context": "Student seeking clarification on course content",
+      "expected_response_type": "clarification_with_examples"
+    },
+    {
+      "id": "benign_015",
+      "category": "clarification",
+      "query": "What's the difference between supervised and unsupervised learning? The textbook explanation confused me.",
+      "context": "Student confused by course materials",
+      "expected_response_type": "clear_explanation"
+    }
+  ]
+}

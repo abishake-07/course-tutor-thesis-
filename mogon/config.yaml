@@ -1,0 +1,58 @@
+###############################################################################
+# MOGON II Configuration for Course Tutor
+#
+# This is a copy of config.yaml with settings tuned for running on MOGON II
+# inside Apptainer containers. Ollama runs on the same compute node.
+###############################################################################
+
+course:
+  code: DS101
+  name: Data Science Fundamentals
+  topics:
+  - Python Programming
+  - Data Manipulation (Pandas, NumPy)
+  - Statistical Analysis
+  - Machine Learning Basics
+  - Data Visualization
+  - Ethics in Data Science
+
+defenses:
+  delimiter_isolation: true
+  enabled: true
+  pdf_sanitization: true
+  prompt_injection_detection: true
+  semantic_block_threshold: 0.7
+  semantic_review_threshold: 0.45
+  semantic_risk_detection: true
+  text_normalization: true
+  trigger_phrase_detection: true
+
+feedback:
+  include_rubric_scores: true
+  max_conversation_history: 50
+  structured_format: true
+
+logging:
+  level: INFO
+  log_attacks: true
+  log_conversations: true
+  log_feedback: true
+  log_file: logs/tutor_session.log
+
+model:
+  max_tokens: 2000
+  name: llama3.2
+  # Ollama runs on the same compute node via Apptainer
+  ollama_base_url: http://localhost:11434
+  provider: ollama
+  temperature: 0.7
+
+security:
+  allowed_file_types:
+  - .pdf
+  - .py
+  - .ipynb
+  - .csv
+  execution_timeout_seconds: 30
+  max_code_length: 10000
+  max_pdf_size_mb: 10

@@ -1,0 +1,7 @@
+*.tar
+*.sif
+logs/
+__pycache__/
+*.pyc
+*.pyo
+.env
