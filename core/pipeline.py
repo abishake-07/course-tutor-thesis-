@@ -11,6 +11,12 @@ import yaml
 
 from .utils import get_system_prompt, ASSIGNMENT_RUBRIC, calculate_total_score, format_rubric_for_prompt
 from .defenses import DefenseManager, extract_pdf_text
+from .pdf_ingest import (
+    extract_text_metadata_annotations,
+    strip_metadata,
+    remove_annotations,
+    sanitize_extracted_text,
+)
 
 
 class ConversationHistory:
@@ -181,22 +187,38 @@ class CourseTutor:
         if not pdf_path:
             return "[Error: PDF path not provided]"
         
-        # Extract text
+        # Extraction + pipeline-based PDF defenses
         try:
-            pdf_text = extract_pdf_text(
-                pdf_path, 
-                sanitize=self.defense_manager.pdf_sanitization
-            )
-            
-            # Apply additional defenses if needed
+            extracted = extract_text_metadata_annotations(pdf_path)
+
+            # Config-driven operations (set in config['defenses'])
+            defenses_cfg = self.config.get('defenses', {})
+
+            if defenses_cfg.get('pdf_strip_metadata', False):
+                extracted = strip_metadata(extracted)
+
+            if defenses_cfg.get('pdf_remove_annotations', False):
+                extracted = remove_annotations(extracted)
+
+            if defenses_cfg.get('pdf_extracted_text_normalization', False):
+                extracted = sanitize_extracted_text(extracted)
+
+            # Compose final text for model consumption
+            body = extracted.get('body', '') or ''
+            # Optionally include annotations if present and not removed
+            if extracted.get('annotations'):
+                body += "\n\n[Annotations]\n" + "\n".join(extracted.get('annotations'))
+
+            # Apply existing PDF sanitization as an extra layer if enabled
+            if self.defense_manager.pdf_sanitization:
+                body = self.defense_manager._sanitize_pdf_content(body)
+
+            # Apply the general defenses (prompt injection, trigger phrases, etc.) on the resulting text
             if self.defense_manager.enabled:
-                pdf_text, _ = self.defense_manager.apply_defenses(
-                    pdf_text,
-                    content_type="pdf"
-                )
-            
-            return pdf_text
-            
+                body, _ = self.defense_manager.apply_defenses(body, content_type="pdf")
+
+            return body
+
         except Exception as e:
             return f"[Error processing PDF: {str(e)}]"
     
