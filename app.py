@@ -148,6 +148,27 @@ def main():
             disabled=not defenses_enabled,
             help="Remove metadata and suspicious content from PDFs"
         )
+
+        pdf_strip_metadata = st.checkbox(
+            "Strip PDF Metadata",
+            value=defenses_cfg.get('pdf_strip_metadata', True),
+            disabled=not defenses_enabled,
+            help="Remove metadata fields (title, author, keywords) from extracted PDF text"
+        )
+
+        pdf_remove_annotations = st.checkbox(
+            "Remove PDF Annotations",
+            value=defenses_cfg.get('pdf_remove_annotations', True),
+            disabled=not defenses_enabled,
+            help="Strip in-PDF annotations and comments before passing text to the model"
+        )
+
+        pdf_extracted_text_normalization = st.checkbox(
+            "Normalize Extracted PDF Text",
+            value=defenses_cfg.get('pdf_extracted_text_normalization', True),
+            disabled=not defenses_enabled,
+            help="Apply light normalization to text extracted from PDFs"
+        )
         
         prompt_detection = st.checkbox(
             "Prompt Injection Detection",
@@ -203,6 +224,9 @@ def main():
                 'enabled': defenses_enabled,
                 'delimiter_isolation': delimiter_isolation,
                 'pdf_sanitization': pdf_sanitization,
+                'pdf_strip_metadata': pdf_strip_metadata,
+                'pdf_remove_annotations': pdf_remove_annotations,
+                'pdf_extracted_text_normalization': pdf_extracted_text_normalization,
                 'prompt_injection_detection': prompt_detection,
                 'trigger_phrase_detection': trigger_detection,
                 'text_normalization': text_normalization,

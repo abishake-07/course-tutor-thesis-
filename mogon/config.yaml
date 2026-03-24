@@ -20,6 +20,10 @@ defenses:
   delimiter_isolation: true
   enabled: true
   pdf_sanitization: true
+  # PDF ingestion toggles for pipeline experiments
+  pdf_strip_metadata: true
+  pdf_remove_annotations: true
+  pdf_extracted_text_normalization: true
   prompt_injection_detection: true
   semantic_block_threshold: 0.7
   semantic_review_threshold: 0.45
