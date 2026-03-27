@@ -12,3 +12,4 @@ streamlit>=1.28.0
 
 # Optional: for enhanced functionality
 python-dotenv>=1.0.0  # For environment variable management
+pytest>=7.0.0  # For testing

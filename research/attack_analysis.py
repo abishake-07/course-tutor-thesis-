@@ -214,7 +214,7 @@ class AttackSuccessAnalyzer:
             output_path: Where to save analysis
         """
         # Load evaluation results
-        with open(eval_report_path, 'r') as f:
+        with open(eval_report_path, 'r', encoding='utf-8') as f:
             eval_data = json.load(f)
         
         attack_results = []

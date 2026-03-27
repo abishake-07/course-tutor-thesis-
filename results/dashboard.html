@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RQ1 Baseline Evaluation Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            background: #0f1419;
+            color: #e0e0e0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: #a0a0a0;
+            margin-bottom: 2rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .kpi {
+            background: #1a1f2e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .kpi-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #4a9eff;
+            margin: 0.5rem 0;
+        }
+
+        .kpi-label {
+            font-size: 0.85rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .chart-container {
+            background: #1a1f2e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .chart {
+            width: 100%;
+            height: 400px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>RQ1 Baseline Evaluation Results</h1>
+        <p class="subtitle">Attack Success Rate & Defense Analysis — phi-mini vs llama</p>
+
+        <!-- KPI Cards -->
+        <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="kpi">
+                <div class="kpi-label">Phi-mini ASR</div>
+                <div class="kpi-value">2.7%</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label">LLaMA ASR</div>
+                <div class="kpi-value">0.0%</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label">Benign FPR</div>
+                <div class="kpi-value">0.0%</div>
+            </div>
+        </div>
+
+        <!-- Overall Comparison -->
+        <div class="chart-container">
+            <div class="chart-title">Overall Metrics Comparison</div>
+            <div class="chart" id="overall-comparison"></div>
+        </div>
+
+        <!-- Per-Category ASR -->
+        <div class="chart-container">
+            <div class="chart-title">Attack Success Rate by Category</div>
+            <div class="chart" id="category-asr"></div>
+        </div>
+
+        <!-- Outcome Distribution -->
+        <div class="grid-2">
+            <div class="chart-container">
+                <div class="chart-title">Outcome Distribution — Phi-mini</div>
+                <div class="chart" id="outcome-phi"></div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">Outcome Distribution — LLaMA</div>
+                <div class="chart" id="outcome-llama"></div>
+            </div>
+        </div>
+
+        <!-- Severity Distribution -->
+        <div class="chart-container">
+            <div class="chart-title">Severity Distribution by Category</div>
+            <div class="chart" id="severity-dist"></div>
+        </div>
+    </div>
+
+    <script>
+        const phi_asr = 2.7027027027027026;
+        const llama_asr = 0.0;
+        const phi_detection = 0.0;
+        const llama_detection = 0.0;
+        const phi_accuracy = 28.846153846153843;
+        const llama_accuracy = 28.846153846153843;
+
+        const categories = ["code_injection", "delimiter_manipulation", "document_ingestion", "information_extraction", "jailbreak", "multi_turn", "policy_exploitation", "prompt_injection", "resource_abuse"];
+        const phi_cat_asr = [0.0, 0.0, 33.33333333333333, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        const llama_cat_asr = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+
+        const phi_outcomes = {"ambiguous": 35, "proper_refusal": 1, "policy_bypass": 1};
+        const llama_outcomes = {"ambiguous": 34, "proper_refusal": 3};
+
+        // Overall Comparison
+        const overall_comp = {
+            data: [
+                {
+                    name: 'Phi-mini',
+                    x: ['ASR (%)', 'Detection Rate (%)', 'Accuracy (%)'],
+                    y: [phi_asr, phi_detection, phi_accuracy],
+                    type: 'bar',
+                    marker: {color: '#4a9eff'}
+                },
+                {
+                    name: 'LLaMA',
+                    x: ['ASR (%)', 'Detection Rate (%)', 'Accuracy (%)'],
+                    y: [llama_asr, llama_detection, llama_accuracy],
+                    type: 'bar',
+                    marker: {color: '#ff6b6b'}
+                }
+            ],
+            layout: {
+                barmode: 'group',
+                plot_bgcolor: '#1a1f2e',
+                paper_bgcolor: '#1a1f2e',
+                font: {color: '#e0e0e0'},
+                xaxis: {gridcolor: '#333'},
+                yaxis: {gridcolor: '#333'},
+                hovermode: 'closest'
+            }
+        };
+        Plotly.newPlot('overall-comparison', overall_comp.data, overall_comp.layout, {responsive: true});
+
+        // Category ASR
+        const cat_asr = {
+            data: [
+                {
+                    name: 'Phi-mini',
+                    y: categories,
+                    x: phi_cat_asr,
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: {color: '#4a9eff'}
+                },
+                {
+                    name: 'LLaMA',
+                    y: categories,
+                    x: llama_cat_asr,
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: {color: '#ff6b6b'}
+                }
+            ],
+            layout: {
+                barmode: 'group',
+                plot_bgcolor: '#1a1f2e',
+                paper_bgcolor: '#1a1f2e',
+                font: {color: '#e0e0e0'},
+                xaxis: {title: 'ASR (%)', gridcolor: '#333'},
+                hovermode: 'closest'
+            }
+        };
+        Plotly.newPlot('category-asr', cat_asr.data, cat_asr.layout, {responsive: true});
+
+        // Outcome Distribution - Phi
+        const phi_out = phi_outcomes;
+        const phi_labels = Object.keys(phi_out);
+        const phi_values = Object.values(phi_out);
+
+        const outcome_phi = {
+            data: [{
+                labels: phi_labels,
+                values: phi_values,
+                type: 'pie',
+                hole: 0.4,
+                marker: {colors: ['#ffb347', '#90ee90', '#ff6b6b']}
+            }],
+            layout: {
+                plot_bgcolor: '#1a1f2e',
+                paper_bgcolor: '#1a1f2e',
+                font: {color: '#e0e0e0'}
+            }
+        };
+        Plotly.newPlot('outcome-phi', outcome_phi.data, outcome_phi.layout, {responsive: true});
+
+        // Outcome Distribution - LLaMA
+        const llama_out = llama_outcomes;
+        const llama_labels = Object.keys(llama_out);
+        const llama_values = Object.values(llama_out);
+
+        const outcome_llama = {
+            data: [{
+                labels: llama_labels,
+                values: llama_values,
+                type: 'pie',
+                hole: 0.4,
+                marker: {colors: ['#ffb347', '#90ee90', '#ff6b6b']}
+            }],
+            layout: {
+                plot_bgcolor: '#1a1f2e',
+                paper_bgcolor: '#1a1f2e',
+                font: {color: '#e0e0e0'}
+            }
+        };
+        Plotly.newPlot('outcome-llama', outcome_llama.data, outcome_llama.layout, {responsive: true});
+
+        // Severity Distribution
+        const phi_severity = {"prompt_injection": {"medium": {"total": 1, "successful": 0}, "high": {"total": 3, "successful": 0}, "critical": {"total": 1, "successful": 0}}, "jailbreak": {"medium": {"total": 6, "successful": 0}, "high": {"total": 2, "successful": 0}, "critical": {"total": 0, "successful": 0}}, "policy_exploitation": {"medium": {"total": 1, "successful": 0}, "high": {"total": 3, "successful": 0}, "critical": {"total": 0, "successful": 0}}, "information_extraction": {"medium": {"total": 0, "successful": 0}, "high": {"total": 1, "successful": 0}, "critical": {"total": 3, "successful": 0}}, "delimiter_manipulation": {"medium": {"total": 0, "successful": 0}, "high": {"total": 2, "successful": 0}, "critical": {"total": 2, "successful": 0}}, "code_injection": {"medium": {"total": 0, "successful": 0}, "high": {"total": 0, "successful": 0}, "critical": {"total": 3, "successful": 0}}, "multi_turn": {"medium": {"total": 2, "successful": 0}, "high": {"total": 1, "successful": 0}, "critical": {"total": 0, "successful": 0}}, "resource_abuse": {"medium": {"total": 2, "successful": 0}, "high": {"total": 1, "successful": 0}, "critical": {"total": 0, "successful": 0}}, "document_ingestion": {"medium": {"total": 0, "successful": 0}, "high": {"total": 2, "successful": 0}, "critical": {"total": 1, "successful": 1}}};
+        const severity_data = [];
+        const severity_cats = Object.keys(phi_severity);
+        const severity_levels = ['medium', 'high', 'critical'];
+
+        for (const sev of severity_levels) {
+            const counts = severity_cats.map(cat => phi_severity[cat][sev]['total'] || 0);
+            severity_data.push({
+                name: sev.charAt(0).toUpperCase() + sev.slice(1),
+                y: severity_cats,
+                x: counts,
+                type: 'bar',
+                orientation: 'h'
+            });
+        }
+
+        const severity_dist = {
+            data: severity_data,
+            layout: {
+                barmode: 'stack',
+                plot_bgcolor: '#1a1f2e',
+                paper_bgcolor: '#1a1f2e',
+                font: {color: '#e0e0e0'},
+                xaxis: {title: 'Count', gridcolor: '#333'},
+                hovermode: 'closest'
+            }
+        };
+        Plotly.newPlot('severity-dist', severity_dist.data, severity_dist.layout, {responsive: true});
+    </script>
+</body>
+</html>

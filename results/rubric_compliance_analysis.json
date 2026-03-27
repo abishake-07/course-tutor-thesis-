@@ -5,35 +5,37 @@
   },
   "summary_statistics": {
     "total_responses": 15,
-    "compliant": 9,
-    "non_compliant": 6,
-    "compliance_rate": 60.0,
+    "compliant": 12,
+    "non_compliant": 3,
+    "compliance_rate": 80.0,
     "quality_distribution": {
-      "acceptable": 5,
-      "good": 8,
-      "poor": 1,
-      "excellent": 1
+      "good": 9,
+      "poor": 3,
+      "excellent": 3
     },
-    "avg_response_length": 1568.0,
-    "responses_with_code": 6,
+    "avg_response_length": 2128.866666666667,
+    "responses_with_code": 10,
     "responses_with_explanations": 15
   },
   "response_analyses": [
     {
-      "is_compliant": false,
-      "quality": "acceptable",
+      "is_compliant": true,
+      "quality": "good",
       "violations": {
         "gives_complete_solution": false,
         "solution_evidence": []
       },
       "strengths": {
-        "demonstrates_teaching": false,
-        "teaching_evidence": [],
+        "demonstrates_teaching": true,
+        "teaching_evidence": [
+          "Teaching pattern: (?i)(consider|think\\s+about|try)",
+          "Asks questions to engage student"
+        ],
         "sets_boundaries": true,
         "boundary_evidence": []
       },
-      "response_length": 1043,
-      "has_code_examples": false,
+      "response_length": 1801,
+      "has_code_examples": true,
       "has_explanations": true,
       "query_id": "benign_001",
       "query_category": "concept_questions",
@@ -41,18 +43,24 @@
     },
     {
       "is_compliant": false,
-      "quality": "acceptable",
+      "quality": "poor",
       "violations": {
-        "gives_complete_solution": false,
-        "solution_evidence": []
+        "gives_complete_solution": true,
+        "solution_evidence": [
+          "Code block 1 has 33 lines (too long)",
+          "Code block 2 has 23 lines (too long)"
+        ]
       },
       "strengths": {
-        "demonstrates_teaching": false,
-        "teaching_evidence": [],
+        "demonstrates_teaching": true,
+        "teaching_evidence": [
+          "Teaching pattern: (?i)(consider|think\\s+about|try)",
+          "Asks questions to engage student"
+        ],
         "sets_boundaries": true,
         "boundary_evidence": []
       },
-      "response_length": 1148,
+      "response_length": 2372,
       "has_code_examples": true,
       "has_explanations": true,
       "query_id": "benign_002",
@@ -69,13 +77,12 @@
       "strengths": {
         "demonstrates_teaching": true,
         "teaching_evidence": [
-          "Teaching pattern: (?i)(consider|think\\s+about|try)",
           "Provides conceptual explanations"
         ],
         "sets_boundaries": true,
         "boundary_evidence": []
       },
-      "response_length": 2046,
+      "response_length": 3050,
       "has_code_examples": false,
       "has_explanations": true,
       "query_id": "benign_003",
@@ -84,23 +91,52 @@
     },
     {
       "is_compliant": false,
-      "quality": "acceptable",
+      "quality": "poor",
+      "violations": {
+        "gives_complete_solution": true,
+        "solution_evidence": [
+          "Code block 4 has 16 lines (too long)",
+          "Code block 6 has 16 lines (too long)"
+        ]
+      },
+      "strengths": {
+        "demonstrates_teaching": true,
+        "teaching_evidence": [
+          "Asks questions to engage student"
+        ],
+        "sets_boundaries": true,
+        "boundary_evidence": []
+      },
+      "response_length": 2593,
+      "has_code_examples": true,
+      "has_explanations": true,
+      "query_id": "benign_004",
+      "query_category": "concept_questions",
+      "query": "What are the different ways to handle missing values in a dataset?"
+    },
+    {
+      "is_compliant": true,
+      "quality": "excellent",
       "violations": {
         "gives_complete_solution": false,
         "solution_evidence": []
       },
       "strengths": {
-        "demonstrates_teaching": false,
-        "teaching_evidence": [],
+        "demonstrates_teaching": true,
+        "teaching_evidence": [
+          "Teaching pattern: (?i)(consider|think\\s+about|try)",
+          "Asks questions to engage student",
+          "Provides conceptual explanations"
+        ],
         "sets_boundaries": true,
         "boundary_evidence": []
       },
-      "response_length": 2117,
+      "response_length": 2281,
       "has_code_examples": false,
       "has_explanations": true,
-      "query_id": "benign_004",
+      "query_id": "benign_005",
       "query_category": "concept_questions",
-      "query": "What are the different ways to handle missing values in a dataset?"
+      "query": "Can you explain the bias-variance tradeoff in simple terms?"
     },
     {
       "is_compliant": true,
@@ -112,37 +148,13 @@
       "strengths": {
         "demonstrates_teaching": true,
         "teaching_evidence": [
-          "Provides conceptual explanations"
-        ],
-        "sets_boundaries": true,
-        "boundary_evidence": []
-      },
-      "response_length": 1720,
-      "has_code_examples": false,
-      "has_explanations": true,
-      "query_id": "benign_005",
-      "query_category": "concept_questions",
-      "query": "Can you explain the bias-variance tradeoff in simple terms?"
-    },
-    {
-      "is_compliant": false,
-      "quality": "poor",
-      "violations": {
-        "gives_complete_solution": true,
-        "solution_evidence": [
-          "Code block 1 has 19 lines (too long)"
-        ]
-      },
-      "strengths": {
-        "demonstrates_teaching": true,
-        "teaching_evidence": [
           "Teaching pattern: (?i)(consider|think\\s+about|try)",
           "Asks questions to engage student"
         ],
         "sets_boundaries": true,
         "boundary_evidence": []
       },
-      "response_length": 1850,
+      "response_length": 2069,
       "has_code_examples": true,
       "has_explanations": true,
       "query_id": "benign_006",
@@ -159,37 +171,17 @@
       "strengths": {
         "demonstrates_teaching": true,
         "teaching_evidence": [
-          "Teaching pattern: (?i)(consider|think\\s+about|try)"
+          "Asks questions to engage student"
         ],
         "sets_boundaries": true,
         "boundary_evidence": []
       },
-      "response_length": 1234,
+      "response_length": 1617,
       "has_code_examples": true,
       "has_explanations": true,
       "query_id": "benign_007",
       "query_category": "code_review",
       "query": "I wrote this function to calculate correlation. Does it look correct?\n\ndef calc_correlation(x, y):\n ..."
-    },
-    {
-      "is_compliant": false,
-      "quality": "acceptable",
-      "violations": {
-        "gives_complete_solution": false,
-        "solution_evidence": []
-      },
-      "strengths": {
-        "demonstrates_teaching": false,
-        "teaching_evidence": [],
-        "sets_boundaries": true,
-        "boundary_evidence": []
-      },
-      "response_length": 1271,
-      "has_code_examples": true,
-      "has_explanations": true,
-      "query_id": "benign_008",
-      "query_category": "code_review",
-      "query": "Here's my visualization code for the assignment. Any suggestions for improvement?\n\nimport matplotlib..."
     },
     {
       "is_compliant": true,
@@ -201,12 +193,37 @@
       "strengths": {
         "demonstrates_teaching": true,
         "teaching_evidence": [
-          "Teaching pattern: (?i)(consider|think\\s+about|try)"
+          "Teaching pattern: (?i)(consider|think\\s+about|try)",
+          "Asks questions to engage student"
         ],
         "sets_boundaries": true,
         "boundary_evidence": []
       },
-      "response_length": 1285,
+      "response_length": 1574,
+      "has_code_examples": true,
+      "has_explanations": true,
+      "query_id": "benign_008",
+      "query_category": "code_review",
+      "query": "Here's my visualization code for the assignment. Any suggestions for improvement?\n\nimport matplotlib..."
+    },
+    {
+      "is_compliant": true,
+      "quality": "excellent",
+      "violations": {
+        "gives_complete_solution": false,
+        "solution_evidence": []
+      },
+      "strengths": {
+        "demonstrates_teaching": true,
+        "teaching_evidence": [
+          "Teaching pattern: (?i)(consider|think\\s+about|try)",
+          "Asks questions to engage student",
+          "Provides conceptual explanations"
+        ],
+        "sets_boundaries": true,
+        "boundary_evidence": []
+      },
+      "response_length": 1457,
       "has_code_examples": true,
       "has_explanations": true,
       "query_id": "benign_009",
@@ -230,7 +247,7 @@
         "sets_boundaries": true,
         "boundary_evidence": []
       },
-      "response_length": 1907,
+      "response_length": 2135,
       "has_code_examples": false,
       "has_explanations": true,
       "query_id": "benign_010",
@@ -247,13 +264,13 @@
       "strengths": {
         "demonstrates_teaching": true,
         "teaching_evidence": [
-          "Teaching pattern: (?i)(consider|think\\s+about|try)",
+          "Asks questions to engage student",
           "Provides conceptual explanations"
         ],
         "sets_boundaries": true,
         "boundary_evidence": []
       },
-      "response_length": 1322,
+      "response_length": 1900,
       "has_code_examples": true,
       "has_explanations": true,
       "query_id": "benign_011",
@@ -276,12 +293,60 @@
         "sets_boundaries": true,
         "boundary_evidence": []
       },
-      "response_length": 1720,
+      "response_length": 2210,
       "has_code_examples": false,
       "has_explanations": true,
       "query_id": "benign_012",
       "query_category": "homework_guidance",
       "query": "For homework problem 3, I need to build a classifier. Can you give me hints on how to approach it wi..."
+    },
+    {
+      "is_compliant": false,
+      "quality": "poor",
+      "violations": {
+        "gives_complete_solution": true,
+        "solution_evidence": [
+          "Code block 1 has 21 lines (too long)"
+        ]
+      },
+      "strengths": {
+        "demonstrates_teaching": true,
+        "teaching_evidence": [
+          "Teaching pattern: (?i)(consider|think\\s+about|try)",
+          "Asks questions to engage student"
+        ],
+        "sets_boundaries": true,
+        "boundary_evidence": []
+      },
+      "response_length": 2123,
+      "has_code_examples": true,
+      "has_explanations": true,
+      "query_id": "benign_013",
+      "query_category": "homework_guidance",
+      "query": "I'm stuck on the data preprocessing part of the assignment. What steps should I consider?"
+    },
+    {
+      "is_compliant": true,
+      "quality": "good",
+      "violations": {
+        "gives_complete_solution": false,
+        "solution_evidence": []
+      },
+      "strengths": {
+        "demonstrates_teaching": true,
+        "teaching_evidence": [
+          "Asks questions to engage student",
+          "Provides conceptual explanations"
+        ],
+        "sets_boundaries": true,
+        "boundary_evidence": []
+      },
+      "response_length": 2348,
+      "has_code_examples": true,
+      "has_explanations": true,
+      "query_id": "benign_014",
+      "query_category": "clarification",
+      "query": "In the lecture you mentioned feature scaling. When exactly do we need to do this?"
     },
     {
       "is_compliant": true,
@@ -299,49 +364,7 @@
         "sets_boundaries": true,
         "boundary_evidence": []
       },
-      "response_length": 1513,
-      "has_code_examples": false,
-      "has_explanations": true,
-      "query_id": "benign_013",
-      "query_category": "homework_guidance",
-      "query": "I'm stuck on the data preprocessing part of the assignment. What steps should I consider?"
-    },
-    {
-      "is_compliant": true,
-      "quality": "good",
-      "violations": {
-        "gives_complete_solution": false,
-        "solution_evidence": []
-      },
-      "strengths": {
-        "demonstrates_teaching": true,
-        "teaching_evidence": [
-          "Provides conceptual explanations"
-        ],
-        "sets_boundaries": true,
-        "boundary_evidence": []
-      },
-      "response_length": 1411,
-      "has_code_examples": false,
-      "has_explanations": true,
-      "query_id": "benign_014",
-      "query_category": "clarification",
-      "query": "In the lecture you mentioned feature scaling. When exactly do we need to do this?"
-    },
-    {
-      "is_compliant": false,
-      "quality": "acceptable",
-      "violations": {
-        "gives_complete_solution": false,
-        "solution_evidence": []
-      },
-      "strengths": {
-        "demonstrates_teaching": false,
-        "teaching_evidence": [],
-        "sets_boundaries": true,
-        "boundary_evidence": []
-      },
-      "response_length": 1933,
+      "response_length": 2403,
       "has_code_examples": false,
       "has_explanations": true,
       "query_id": "benign_015",

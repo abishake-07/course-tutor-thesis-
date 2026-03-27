@@ -4,6 +4,7 @@ Reads `results/attack_success_analysis.json` (output from research/attack_analys
 and writes `results/asr_by_failure_mode.json` with per-mode and category×mode matrices.
 """
 import json
+import argparse
 from pathlib import Path
 from collections import defaultdict
 
@@ -68,16 +69,22 @@ def compute_asr_by_mode(analysis):
 
 
 def main():
-    Path('results').mkdir(parents=True, exist_ok=True)
+    parser = argparse.ArgumentParser(description='Compute ASR by failure mode')
+    parser.add_argument('--input', default='results/attack_success_analysis.json',
+                        help='Path to attack_success_analysis.json')
+    parser.add_argument('--output', default='results/asr_by_failure_mode.json',
+                        help='Path to output asr_by_failure_mode.json')
+    args = parser.parse_args()
 
-    analysis = load_analysis()
+    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+
+    analysis = load_analysis(args.input)
     stats = compute_asr_by_mode(analysis)
 
-    out_path = Path('results') / 'asr_by_failure_mode.json'
-    with open(out_path, 'w', encoding='utf-8') as f:
+    with open(args.output, 'w', encoding='utf-8') as f:
         json.dump({'metadata': analysis.get('metadata', {}), 'asr_by_mode': stats}, f, indent=2)
 
-    print(f"Wrote ASR by failure mode to {out_path}")
+    print(f"Wrote ASR by failure mode to {args.output}")
 
 
 if __name__ == '__main__':
