@@ -221,7 +221,46 @@ class CourseTutor:
 
         except Exception as e:
             return f"[Error processing PDF: {str(e)}]"
-    
+
+    def get_available_ollama_models(self) -> List[str]:
+        """
+        Fetch list of available models from Ollama API
+
+        Returns:
+            List of model names, or empty list if connection fails
+        """
+        import requests
+
+        base_url = self.config['model'].get('ollama_base_url', 'http://localhost:11434')
+        try:
+            response = requests.get(f"{base_url}/api/tags", timeout=5)
+            response.raise_for_status()
+            models = response.json().get('models', [])
+            return [m['name'] for m in models]
+        except Exception as e:
+            print(f"Failed to fetch Ollama models: {str(e)}")
+            return []
+
+    def switch_model(self, model_name: str) -> Dict:
+        """
+        Switch to a different model at runtime
+
+        Args:
+            model_name: Name of the model to switch to
+
+        Returns:
+            Dictionary with success status and message/error
+        """
+        try:
+            models = self.get_available_ollama_models()
+            if model_name not in models:
+                return {"success": False, "error": f"Model '{model_name}' not found in Ollama"}
+
+            self.config['model']['name'] = model_name
+            return {"success": True, "message": f"Switched to {model_name}"}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
     def _generate_response(self, user_content: str) -> str:
         """
         Generate response from LLM

@@ -52,21 +52,24 @@ def initialize_session_state():
     """Initialize session state variables"""
     if 'tutor' not in st.session_state:
         st.session_state.tutor = CourseTutor("config.yaml")
-    
+
     if 'logger' not in st.session_state:
         st.session_state.logger = TutorLogger(
             log_dir="logs/streamlit_sessions",
             session_id=f"streamlit_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         )
-    
+
     if 'messages' not in st.session_state:
         st.session_state.messages = []
-    
+
     if 'interaction_count' not in st.session_state:
         st.session_state.interaction_count = 0
-    
+
     if 'blocked_count' not in st.session_state:
         st.session_state.blocked_count = 0
+
+    if 'available_models' not in st.session_state:
+        st.session_state.available_models = []
 
 
 def display_chat_history():
@@ -239,9 +242,38 @@ def main():
                 st.session_state.tutor.config['defenses']
             )
             st.success("Defense settings updated")
-        
+
         st.divider()
-        
+
+        # Model Selection
+        st.subheader("Model Selection")
+
+        # Fetch available models on first load
+        if not st.session_state.available_models:
+            with st.spinner("Fetching available models..."):
+                st.session_state.available_models = st.session_state.tutor.get_available_ollama_models()
+
+        if st.session_state.available_models:
+            current_model = st.session_state.tutor.config['model']['name']
+            selected_model = st.selectbox(
+                "Choose Model",
+                options=st.session_state.available_models,
+                index=st.session_state.available_models.index(current_model) if current_model in st.session_state.available_models else 0,
+                help="Available Ollama models"
+            )
+
+            if selected_model != current_model:
+                result = st.session_state.tutor.switch_model(selected_model)
+                if result['success']:
+                    st.success(result['message'])
+                    st.rerun()
+                else:
+                    st.error(result['error'])
+        else:
+            st.warning("Could not connect to Ollama. Make sure it's running at http://localhost:11434")
+
+        st.divider()
+
         # Session stats
         st.subheader("Session Statistics")
         st.markdown(f"""
