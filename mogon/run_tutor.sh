@@ -12,7 +12,7 @@
 
 #SBATCH --account=nhr-haloed
 #SBATCH --comment="Course Tutor Streamlit + Ollama"
-#SBATCH --gres=gpu:a100:1
+# #SBATCH --gres=gpu:a100:1
 #SBATCH --job-name=course-tutor
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
