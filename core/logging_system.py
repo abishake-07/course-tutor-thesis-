@@ -6,7 +6,7 @@ Tracks all interactions, attacks, defenses, and feedback
 import os
 import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime
 from pathlib import Path
 
