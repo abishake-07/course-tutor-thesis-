@@ -10,23 +10,22 @@
 # Usage:  sbatch run_tutor.sh
 ###############################################################################
 
-#========[ + + + + Requirements + + + + ]========#
-#SBATCH --account=nhr-haloed
-#SBATCH --comment="Course Tutor Streamlit + Ollama"
-#SBATCH --cpus-per-task=4
-#SBATCH --gres=gpu:a100:1
 #SBATCH --job-name=course-tutor
-#SBATCH --mem=16G
+#SBATCH --partition=a100dl
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --output=logs/tutor_%j.log
-#SBATCH --partition=a100dl
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=16G
 #SBATCH --time=04:00:00
+#SBATCH --output=logs/tutor_%j.log
 
-#========[ + + + + Environment + + + + ]========#
+###############################################################################
+# Setup
+###############################################################################
 
 # Load Apptainer module
 module load tools/Apptainer/1.3.4-GCCcore-13.3.0
+module load squashfuse
 
 # Prevent /tmp overflow for large images (per MOGON docs)
 APPTAINER_TMPDIR=/localscratch/${SLURM_JOB_ID}/apptainer_tmp/
@@ -65,7 +64,7 @@ echo "========================================================="
 ###############################################################################
 echo "[$(date)] Starting Ollama server..."
 
-apptainer exec --nv \
+apptainer exec  \
     --bind "$OLLAMA_DATA":/root/.ollama \
     "$OLLAMA_SIF" \
     ollama serve &
@@ -92,7 +91,7 @@ done
 ###############################################################################
 echo "[$(date)] Ensuring llama3.2 model is available..."
 
-apptainer exec --nv \
+apptainer exec  \
     --bind "$OLLAMA_DATA":/root/.ollama \
     "$OLLAMA_SIF" \
     ollama pull llama3.2
@@ -119,5 +118,3 @@ echo "[$(date)] Streamlit exited. Stopping Ollama..."
 kill "$OLLAMA_PID" 2>/dev/null
 wait "$OLLAMA_PID" 2>/dev/null
 echo "[$(date)] Done."
-[abharv01@login23 course-tutor]$ sbatch run_tutor.sh
-sbatch: error: Batch job submission failed: Invalid account or account/partition combination specified
