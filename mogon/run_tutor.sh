@@ -14,19 +14,19 @@
 #SBATCH --account=nhr-haloed
 #SBATCH --comment="Course Tutor Streamlit + Ollama"
 #SBATCH --cpus-per-task=4
-#SBATCH --gres=gpu:gtx1080ti:1
+#SBATCH --gres=gpu:a100:1
 #SBATCH --job-name=course-tutor
 #SBATCH --mem=16G
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --output=logs/tutor_%j.log
-#SBATCH --partition=m2_gpu
+#SBATCH --partition=a100dl
 #SBATCH --time=04:00:00
 
 #========[ + + + + Environment + + + + ]========#
 
 # Load Apptainer module
-module load tools/AppTainer
+module load tools/Apptainer/1.3.4-GCCcore-13.3.0
 
 # Prevent /tmp overflow for large images (per MOGON docs)
 APPTAINER_TMPDIR=/localscratch/${SLURM_JOB_ID}/apptainer_tmp/
@@ -119,3 +119,5 @@ echo "[$(date)] Streamlit exited. Stopping Ollama..."
 kill "$OLLAMA_PID" 2>/dev/null
 wait "$OLLAMA_PID" 2>/dev/null
 echo "[$(date)] Done."
+[abharv01@login23 course-tutor]$ sbatch run_tutor.sh
+sbatch: error: Batch job submission failed: Invalid account or account/partition combination specified
