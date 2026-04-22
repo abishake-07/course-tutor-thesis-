@@ -12,10 +12,8 @@
 
 #SBATCH --account=nhr-haloed
 #SBATCH --comment="Course Tutor Streamlit + Ollama"
-#SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:a100:1
 #SBATCH --job-name=course-tutor
-#SBATCH --mem=16G
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --output=$HOME/logs/tutor_%j.log
