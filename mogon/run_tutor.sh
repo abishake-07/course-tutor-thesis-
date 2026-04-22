@@ -19,7 +19,7 @@
 #SBATCH --mem=16G
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --output=logs/tutor_%j.log
+#SBATCH --output=$HOME/logs/tutor_%j.log
 #SBATCH --partition=a100dl
 #SBATCH --time=04:00:00
 
@@ -36,7 +36,7 @@ mkdir -p "$APPTAINER_TMPDIR"
 # Directories
 WORK_DIR="$HOME/course-tutor"
 OLLAMA_DATA="$WORK_DIR/ollama_models"
-LOGS_DIR="$WORK_DIR/logs"
+LOGS_DIR="$HOME/logs"
 mkdir -p "$OLLAMA_DATA" "$LOGS_DIR"
 
 # Container images (must be built beforehand — see MOGON_SETUP.md)
