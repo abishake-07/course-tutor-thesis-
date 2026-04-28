@@ -22,12 +22,30 @@ from research.attack_analysis import AttackSuccessAnalyzer
 from research.rubric_checker import RubricComplianceChecker
 
 
+# Defense category mapping
+DEFENSE_CATEGORIES = {
+    "baseline": "baseline",
+    "delimiter_only": "structural",
+    "pdf_sanitization_only": "processing",
+    "delimiter_pdf": "structural",
+    "regex_detection_only": "detection_based",
+    "trigger_detection_only": "detection_based",
+    "normalization_only": "processing",
+    "semantic_detection_only": "detection_based",
+    "all_detection": "detection_based",
+    "full_defense": "comprehensive",
+    "recommended": "comprehensive"
+}
+
+
 class ComprehensiveBenchmark:
     """Run comprehensive benchmark across all defense configurations."""
     
-    def __init__(self, config_path: str = "config.yaml"):
+    def __init__(self, config_path: str = "config.yaml", model_name: str = "llama"):
         self.config_path = config_path
+        self.model_name = model_name
         self.results = {}
+        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
     def save_config(self, defense_config: Dict):
         """Save defense configuration to config.yaml."""
@@ -46,6 +64,18 @@ class ComprehensiveBenchmark:
         print(f"Description: {config_obj.description}")
         print("="*80)
         
+        # Determine category and create output directory
+        category = DEFENSE_CATEGORIES.get(config_name, "other")
+        output_dir = Path(f"results/{self.model_name}/{category}")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Generate filename with timestamp
+        report_filename = f"{config_name}_attack_with_defense_{self.timestamp}.json"
+        analysis_filename = f"{config_name}_attack_analysis_with_defense_{self.timestamp}.json"
+        
+        report_path = output_dir / report_filename
+        analysis_path = output_dir / analysis_filename
+        
         # Update config file
         self.save_config(config_obj.config)
         
@@ -59,13 +89,13 @@ class ComprehensiveBenchmark:
         attacks_blocked, attacks_bypassed = evaluator.test_attack_queries()
         
         print("\n[3/4] Generating evaluation report...")
-        evaluator.generate_report(f"results/{config_name}_evaluation.json")
+        evaluator.generate_report(str(report_path))
         
         print("\n[4/4] Analyzing attack success...")
         analyzer = AttackSuccessAnalyzer()
         attack_analysis = analyzer.analyze_evaluation_results(
-            f"results/{config_name}_evaluation.json",
-            f"results/{config_name}_attack_analysis.json"
+            str(report_path),
+            str(analysis_path)
         )
         
         # Calculate metrics
@@ -78,11 +108,15 @@ class ComprehensiveBenchmark:
             attacks_bypassed
         )
         
+        print(f"\n✓ Results saved to: {output_dir}/")
+        
         return {
             "config": config_obj.config,
             "metrics": metrics,
             "evaluation": evaluator.results,
-            "attack_analysis": attack_analysis
+            "attack_analysis": attack_analysis,
+            "category": category,
+            "output_dir": str(output_dir)
         }
     
     def _calculate_metrics(self, eval_results: Dict, attack_analysis: Dict,
@@ -155,12 +189,17 @@ class ComprehensiveBenchmark:
         self._generate_comparison_report()
     
     def _generate_comparison_report(self):
-        """Generate comprehensive comparison report."""
-        report_path = "results/comprehensive_benchmark_report.json"
+        """Generate comprehensive comparison report organized by category."""
+        output_dir = Path(f"results/{self.model_name}")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        report_path = output_dir / f"comprehensive_benchmark_report_{self.timestamp}.json"
         
         # Prepare summary
         summary = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": self.timestamp,
+            "datetime": datetime.now().isoformat(),
+            "model": self.model_name,
             "configurations_tested": len(self.results),
             "configuration_names": list(self.results.keys())
         }
@@ -194,7 +233,7 @@ class ComprehensiveBenchmark:
         # Print summary
         self._print_comparison_summary(comparison)
         
-        print(f"\n✓ Comprehensive benchmark report saved to: {report_path}")
+        print(f"\n[OK] Comprehensive benchmark report saved to: {report_path}")
     
     def _print_comparison_summary(self, comparison: List[Dict]):
         """Print formatted comparison table."""
@@ -226,7 +265,7 @@ class ComprehensiveBenchmark:
             best_detection = max(non_baseline, key=lambda x: x['detection_rate'])
             lowest_fpr = min(comparison, key=lambda x: x['fpr'])
             
-            print("\n🏆 BEST PERFORMERS:")
+            print("\n[BEST PERFORMERS]:")
             print(f"  Lowest ASR:         {best_asr['configuration']} ({best_asr['asr']:.1f}%)")
             print(f"  Highest Detection:  {best_detection['configuration']} ({best_detection['detection_rate']:.1f}%)")
             print(f"  Lowest FPR:         {lowest_fpr['configuration']} ({lowest_fpr['fpr']:.1f}%)")
@@ -234,7 +273,7 @@ class ComprehensiveBenchmark:
         print("\n" + "="*100)
         
         # RQ2 Answer
-        print("\n📊 RQ2: WHICH DEFENSES ARE EFFECTIVE?")
+        print("\n[RQ2: WHICH DEFENSES ARE EFFECTIVE?]")
         print("="*100)
         
         # Sort by detection rate
@@ -249,32 +288,41 @@ class ComprehensiveBenchmark:
 
 
 def main():
-    """Run comprehensive benchmark."""
+    """Run comprehensive benchmark for one or both models."""
     import argparse
     
     parser = argparse.ArgumentParser(description='Run comprehensive defense benchmark')
+    parser.add_argument('--model', choices=['llama', 'phi-mini', 'both'], default='both',
+                       help='Which model to test (default: both)')
     parser.add_argument('--configs', nargs='+', help='Specific configs to test (default: all)')
     parser.add_argument('--quick', action='store_true', help='Run quick test (baseline + full_defense only)')
     
     args = parser.parse_args()
     
-    benchmark = ComprehensiveBenchmark()
+    models = ['llama', 'phi-mini'] if args.model == 'both' else [args.model]
     
     if args.quick:
-        print("\n🚀 Running QUICK benchmark (baseline + full_defense only)")
+        print("\n[QUICK MODE] Running QUICK benchmark (baseline + full_defense only)")
         configs = ['baseline', 'full_defense']
     elif args.configs:
         configs = args.configs
     else:
         configs = None  # All configs
     
-    benchmark.run_all_configurations(configs)
+    for model in models:
+        print(f"\n\n{'='*100}")
+        print(f" "*30 + f"TESTING MODEL: {model.upper()}")
+        print(f"{'='*100}")
+        
+        benchmark = ComprehensiveBenchmark(model_name=model)
+        benchmark.run_all_configurations(configs)
     
     print("\n\n" + "="*100)
-    print(" "*30 + "BENCHMARK COMPLETE!")
+    print(" "*30 + "ALL BENCHMARKS COMPLETE!")
     print("="*100)
-    print("\n📁 Results saved in results/ directory")
-    print("📊 View results/comprehensive_benchmark_report.json for full comparison")
+    print("\nResults organized by model and defense category:")
+    for model in models:
+        print(f"  - {model}: results/{model}/")
     print("\n" + "="*100)
 
 

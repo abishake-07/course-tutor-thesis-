@@ -9,14 +9,14 @@ course:
   - Data Visualization
   - Ethics in Data Science
 defenses:
-  delimiter_isolation: false
-  enabled: false
-  pdf_sanitization: false
-  prompt_injection_detection: false
-  semantic_block_threshold: 0.7  # value ignored when semantic_risk_detection is false
-  semantic_review_threshold: 0.45  # value ignored when semantic_risk_detection is false
-  semantic_risk_detection: false
-  text_normalization: false
+  delimiter_isolation: true
+  enabled: true
+  pdf_sanitization: true
+  prompt_injection_detection: true
+  semantic_block_threshold: 0.7
+  semantic_review_threshold: 0.45
+  semantic_risk_detection: true
+  text_normalization: true
   trigger_phrase_detection: false
 feedback:
   include_rubric_scores: true
