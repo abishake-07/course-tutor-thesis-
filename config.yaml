@@ -30,7 +30,7 @@ logging:
   log_file: logs/tutor_session.log
 model:
   max_tokens: 2000
-  name: llama3.2
+  name: phi3:mini
   ollama_base_url: http://localhost:11434
   provider: ollama
   temperature: 0.7

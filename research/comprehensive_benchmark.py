@@ -38,6 +38,13 @@ DEFENSE_CATEGORIES = {
 }
 
 
+# Maps benchmark model_name argument to the actual Ollama model identifier
+OLLAMA_MODEL_NAMES = {
+    "llama": "llama3.2",
+    "phi-mini": "phi3:mini",
+}
+
+
 class ComprehensiveBenchmark:
     """Run comprehensive benchmark across all defense configurations."""
     
@@ -53,6 +60,7 @@ class ComprehensiveBenchmark:
             config = yaml.safe_load(f)
         
         config['defenses'] = defense_config
+        config['model']['name'] = OLLAMA_MODEL_NAMES.get(self.model_name, self.model_name)
         
         with open(self.config_path, 'w') as f:
             yaml.dump(config, f, default_flow_style=False)
