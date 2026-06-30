@@ -17,7 +17,7 @@ defenses:
   semantic_review_threshold: 0.45
   semantic_risk_detection: true
   text_normalization: true
-  trigger_phrase_detection: false
+  trigger_phrase_detection: true
 feedback:
   include_rubric_scores: true
   max_conversation_history: 50
@@ -33,7 +33,7 @@ model:
   name: phi3:mini
   ollama_base_url: http://localhost:11434
   provider: ollama
-  temperature: 0.7
+  temperature: 0
 security:
   allowed_file_types:
   - .pdf

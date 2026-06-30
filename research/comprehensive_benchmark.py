@@ -48,9 +48,13 @@ OLLAMA_MODEL_NAMES = {
 class ComprehensiveBenchmark:
     """Run comprehensive benchmark across all defense configurations."""
     
-    def __init__(self, config_path: str = "config.yaml", model_name: str = "llama"):
+    def __init__(self, config_path: str = "config.yaml", model_name: str = "llama",
+                 baseline_runs: int = 1, epochs: int = 1, output_root: str = "results"):
         self.config_path = config_path
         self.model_name = model_name
+        self.baseline_runs = max(1, baseline_runs)
+        self.epochs = max(1, epochs)
+        self.output_root = Path(output_root)
         self.results = {}
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
@@ -65,7 +69,8 @@ class ComprehensiveBenchmark:
         with open(self.config_path, 'w') as f:
             yaml.dump(config, f, default_flow_style=False)
     
-    def run_single_configuration(self, config_name: str, config_obj) -> Dict:
+    def run_single_configuration(self, config_name: str, config_obj,
+                                 run_index: int = None) -> Dict:
         """Run benchmark for a single defense configuration."""
         print("\n" + "="*80)
         print(f"TESTING CONFIGURATION: {config_obj.name}")
@@ -74,12 +79,19 @@ class ComprehensiveBenchmark:
         
         # Determine category and create output directory
         category = DEFENSE_CATEGORIES.get(config_name, "other")
-        output_dir = Path(f"results/{self.model_name}/{category}")
+        if config_name == "baseline" and run_index is not None:
+            output_dir = self.output_root / self.model_name / "baseline-run"
+        else:
+            output_dir = self.output_root / self.model_name / category
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Generate filename with timestamp
-        report_filename = f"{config_name}_attack_with_defense_{self.timestamp}.json"
-        analysis_filename = f"{config_name}_attack_analysis_with_defense_{self.timestamp}.json"
+        if run_index is not None:
+            report_filename = f"{config_name}_run_{run_index:02d}_attack_with_defense_{self.timestamp}.json"
+            analysis_filename = f"{config_name}_run_{run_index:02d}_attack_analysis_with_defense_{self.timestamp}.json"
+        else:
+            report_filename = f"{config_name}_attack_with_defense_{self.timestamp}.json"
+            analysis_filename = f"{config_name}_attack_analysis_with_defense_{self.timestamp}.json"
         
         report_path = output_dir / report_filename
         analysis_path = output_dir / analysis_filename
@@ -124,7 +136,10 @@ class ComprehensiveBenchmark:
             "evaluation": evaluator.results,
             "attack_analysis": attack_analysis,
             "category": category,
-            "output_dir": str(output_dir)
+            "output_dir": str(output_dir),
+            "report_path": str(report_path),
+            "analysis_path": str(analysis_path),
+            "run_index": run_index
         }
     
     def _calculate_metrics(self, eval_results: Dict, attack_analysis: Dict,
@@ -139,22 +154,77 @@ class ComprehensiveBenchmark:
         total_attacks = attacks_blocked + attacks_bypassed
         total_benign = benign_passed + benign_failed
         
-        asr = attack_analysis['asr_statistics']['overall_asr']
+        asr_strict = attack_analysis['asr_statistics'].get('asr_strict', attack_analysis['asr_statistics']['overall_asr'])
+        asr_broad = attack_analysis['asr_statistics'].get('asr_broad', asr_strict)
         detection_rate = (attacks_blocked / total_attacks * 100) if total_attacks > 0 else 0
         fpr = (benign_failed / total_benign * 100) if total_benign > 0 else 0
         
         return {
-            "asr": asr,
+            # Backward-compatible `asr` maps to strict ASR.
+            "asr": asr_strict,
+            "asr_strict": asr_strict,
+            "asr_broad": asr_broad,
             "detection_rate": detection_rate,
             "fpr": fpr,
             "attacks_total": total_attacks,
             "attacks_blocked": attacks_blocked,
             "attacks_bypassed": attacks_bypassed,
             "attacks_successful": attack_analysis['asr_statistics']['successful_attacks'],
+            "attacks_successful_broad": attack_analysis['asr_statistics'].get('successful_attacks_broad', attack_analysis['asr_statistics']['successful_attacks']),
             "benign_total": total_benign,
             "benign_passed": benign_passed,
             "benign_blocked": benign_failed,
-            "by_category": attack_analysis['asr_statistics']['by_category']
+            "by_category": attack_analysis['asr_statistics']['by_category'],
+            "outcome_categories": attack_analysis['asr_statistics'].get('category_counts', {})
+        }
+
+    def _aggregate_repeated_runs(self, run_results: List[Dict], config_name: str, config_obj, category: str) -> Dict:
+        """Aggregate repeated runs into a single summary result."""
+        if not run_results:
+            raise ValueError("No run results provided for aggregation")
+
+        metrics_list = [r['metrics'] for r in run_results]
+        n = len(metrics_list)
+
+        def avg(key: str) -> float:
+            return sum(m.get(key, 0) for m in metrics_list) / n
+
+        avg_metrics = {
+            "asr": avg("asr"),
+            "asr_strict": avg("asr_strict"),
+            "asr_broad": avg("asr_broad"),
+            "detection_rate": avg("detection_rate"),
+            "fpr": avg("fpr"),
+            "attacks_total": round(avg("attacks_total")),
+            "attacks_blocked": round(avg("attacks_blocked")),
+            "attacks_bypassed": round(avg("attacks_bypassed")),
+            "attacks_successful": round(avg("attacks_successful")),
+            "attacks_successful_broad": round(avg("attacks_successful_broad")),
+            "benign_total": round(avg("benign_total")),
+            "benign_passed": round(avg("benign_passed")),
+            "benign_blocked": round(avg("benign_blocked")),
+            "num_runs": n,
+            "run_reports": [r.get('report_path') for r in run_results],
+            "run_analyses": [r.get('analysis_path') for r in run_results],
+        }
+
+        if config_name == "baseline":
+            output_dir = self.output_root / self.model_name / "baseline-run"
+        else:
+            output_dir = self.output_root / self.model_name / category
+
+        return {
+            "config": config_obj.config,
+            "metrics": avg_metrics,
+            "evaluation": {
+                "note": f"Aggregated over {n} runs. See run_reports for per-run files."
+            },
+            "attack_analysis": {
+                "note": f"Aggregated metrics over {n} runs. See run_analyses for per-run analyses."
+            },
+            "category": category,
+            "output_dir": str(output_dir),
+            "run_index": None
         }
     
     def run_all_configurations(self, configs_to_test: List[str] = None):
@@ -180,16 +250,42 @@ class ComprehensiveBenchmark:
         
         for i, (config_name, config_obj) in enumerate(configs.items(), 1):
             print(f"\n\n>>> Configuration {i}/{len(configs)}: {config_name}")
-            
-            result = self.run_single_configuration(config_name, config_obj)
-            self.results[config_name] = result
+
+            runs_for_config = self.baseline_runs if config_name == "baseline" else self.epochs
+
+            if runs_for_config > 1:
+                print(f"Running {config_name} {runs_for_config} times...")
+                repeated_runs = []
+                for run_idx in range(1, runs_for_config + 1):
+                    print(f"\n--- {config_name.upper()} RUN {run_idx}/{runs_for_config} ---")
+                    repeated_runs.append(
+                        self.run_single_configuration(config_name, config_obj, run_index=run_idx)
+                    )
+
+                result = self._aggregate_repeated_runs(
+                    repeated_runs,
+                    config_name,
+                    config_obj,
+                    DEFENSE_CATEGORIES.get(config_name, "other")
+                )
+                self.results[config_name] = result
+                self.results[f"{config_name}_runs"] = {
+                    "num_runs": runs_for_config,
+                    "run_reports": result["metrics"]["run_reports"],
+                    "run_analyses": result["metrics"]["run_analyses"],
+                    "asr_strict_mean": result["metrics"]["asr_strict"],
+                    "asr_broad_mean": result["metrics"]["asr_broad"],
+                }
+            else:
+                result = self.run_single_configuration(config_name, config_obj)
+                self.results[config_name] = result
             
             # Store baseline ASR for mitigation calculation
             if config_name == "baseline":
-                baseline_asr = result['metrics']['asr']
+                baseline_asr = result['metrics']['asr_strict']
             elif baseline_asr is not None:
                 # Calculate mitigation rate
-                mitigation = baseline_asr - result['metrics']['asr']
+                mitigation = baseline_asr - result['metrics']['asr_strict']
                 result['metrics']['mitigation_rate'] = mitigation
                 result['metrics']['mitigation_percentage'] = (mitigation / baseline_asr * 100) if baseline_asr > 0 else 0
         
@@ -198,7 +294,7 @@ class ComprehensiveBenchmark:
     
     def _generate_comparison_report(self):
         """Generate comprehensive comparison report organized by category."""
-        output_dir = Path(f"results/{self.model_name}")
+        output_dir = self.output_root / self.model_name
         output_dir.mkdir(parents=True, exist_ok=True)
         
         report_path = output_dir / f"comprehensive_benchmark_report_{self.timestamp}.json"
@@ -215,10 +311,13 @@ class ComprehensiveBenchmark:
         # Create comparison table data
         comparison = []
         for config_name, result in self.results.items():
+            if config_name.endswith("_runs"):
+                continue
             metrics = result['metrics']
             comparison.append({
                 "configuration": config_name,
-                "asr": metrics['asr'],
+                "asr": metrics['asr_strict'],
+                "asr_broad": metrics.get('asr_broad', metrics['asr_strict']),
                 "detection_rate": metrics['detection_rate'],
                 "fpr": metrics['fpr'],
                 "mitigation_rate": metrics.get('mitigation_rate', 0),
@@ -230,7 +329,13 @@ class ComprehensiveBenchmark:
         report = {
             "summary": summary,
             "comparison_table": comparison,
-            "detailed_results": self.results
+            "detailed_results": self.results,
+            "formulae": {
+                "asr_strict": "cat1_confirmed_success / total_attacks * 100",
+                "asr_broad": "(cat1_confirmed_success + cat2_partial_unstable) / total_attacks * 100",
+                "mitigation_rate": "asr_strict_baseline - asr_strict_defended",
+                "mitigation_percentage": "(asr_strict_baseline - asr_strict_defended) / asr_strict_baseline * 100"
+            }
         }
         
         # Save report
@@ -304,6 +409,12 @@ def main():
                        help='Which model to test (default: both)')
     parser.add_argument('--configs', nargs='+', help='Specific configs to test (default: all)')
     parser.add_argument('--quick', action='store_true', help='Run quick test (baseline + full_defense only)')
+    parser.add_argument('--baseline-runs', type=int, default=1,
+                       help='How many times to repeat baseline config (default: 1)')
+    parser.add_argument('--epochs', '-epochs', type=int, default=1,
+                       help='How many times to repeat non-baseline configs (default: 1)')
+    parser.add_argument('--output-root', default='results',
+                       help='Root directory for benchmark outputs (default: results)')
     
     args = parser.parse_args()
     
@@ -322,7 +433,12 @@ def main():
         print(f" "*30 + f"TESTING MODEL: {model.upper()}")
         print(f"{'='*100}")
         
-        benchmark = ComprehensiveBenchmark(model_name=model)
+        benchmark = ComprehensiveBenchmark(
+            model_name=model,
+            baseline_runs=args.baseline_runs,
+            epochs=args.epochs,
+            output_root=args.output_root,
+        )
         benchmark.run_all_configurations(configs)
     
     print("\n\n" + "="*100)
@@ -330,7 +446,7 @@ def main():
     print("="*100)
     print("\nResults organized by model and defense category:")
     for model in models:
-        print(f"  - {model}: results/{model}/")
+        print(f"  - {model}: {args.output_root}/{model}/")
     print("\n" + "="*100)
 
 
