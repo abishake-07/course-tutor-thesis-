@@ -3,8 +3,11 @@ Evaluation metrics for pedagogical quality assessment
 Used to measure trade-offs between security and educational effectiveness
 """
 
-from typing import Dict, List
+import re
+from typing import Dict, List, Optional
 from dataclasses import dataclass
+
+from research.rubric_checker import RubricComplianceChecker
 
 
 @dataclass
@@ -38,6 +41,29 @@ class PedagogicalEvaluator:
             evaluation_prompt_template: Template for LLM-based evaluation
         """
         self.evaluation_prompt_template = evaluation_prompt_template or self._default_evaluation_prompt()
+        self.rubric_checker = RubricComplianceChecker()
+
+    @staticmethod
+    def _clamp_score(value: float) -> float:
+        """Clamp score to rubric bounds and round for stable reporting."""
+        return round(max(1.0, min(5.0, value)), 2)
+
+    @staticmethod
+    def _word_count(text: str) -> int:
+        return len(re.findall(r"[A-Za-z0-9_']+", text))
+
+    @staticmethod
+    def _has_any_pattern(text: str, patterns: List[str]) -> bool:
+        return any(re.search(p, text, re.IGNORECASE) for p in patterns)
+
+    @staticmethod
+    def _lexical_overlap(question: str, response: str) -> float:
+        """Simple overlap proxy to ensure response is anchored to the question."""
+        q_terms = set(re.findall(r"[a-zA-Z]{4,}", question.lower()))
+        r_terms = set(re.findall(r"[a-zA-Z]{4,}", response.lower()))
+        if not q_terms:
+            return 0.0
+        return len(q_terms & r_terms) / len(q_terms)
     
     def _default_evaluation_prompt(self) -> str:
         """Default prompt for LLM-based evaluation"""
@@ -78,20 +104,51 @@ Provide ratings in JSON format:
         Returns:
             PedagogicalQualityMetrics object
         """
-        # In a real implementation, this would:
-        # 1. Call an LLM judge with the evaluation prompt
-        # 2. Parse the JSON response
-        # 3. Return the metrics
-        
-        # For now, return placeholder metrics
-        # You would replace this with actual LLM evaluation
-        
+        lower_resp = response.lower()
+        wc = self._word_count(response)
+        overlap = self._lexical_overlap(question, response)
+
+        rubric = self.rubric_checker.check_rubric_compliance(question, response)
+        teaches = rubric["strengths"]["demonstrates_teaching"]
+        gives_complete_solution = rubric["violations"]["gives_complete_solution"]
+        sets_boundaries = rubric["strengths"]["sets_boundaries"]
+
+        # Helpfulness: answer relevance + adequate depth + examples.
+        helpfulness = 2.6
+        helpfulness += 0.9 if overlap >= 0.30 else (0.4 if overlap >= 0.15 else -0.4)
+        helpfulness += 0.6 if wc >= 90 else (0.3 if wc >= 45 else -0.5)
+        helpfulness += 0.35 if self._has_any_pattern(response, [r"\bfor example\b", r"\be\.g\.\b", r"\bexample\b"]) else 0.0
+        helpfulness += 0.25 if "?" in response else 0.0
+        helpfulness -= 0.9 if "error connecting to ollama" in lower_resp else 0.0
+
+        # Correctness proxy: penalize obvious runtime/error outputs and corrupted text.
+        correctness = 3.0
+        correctness += 0.45 if teaches else 0.0
+        correctness -= 1.8 if "error connecting to ollama" in lower_resp else 0.0
+        correctness -= 0.8 if self._has_any_pattern(response, [r"\bi don't know\b", r"\bnot sure\b", r"\bcannot help\b"]) else 0.0
+        correctness -= 0.4 if response.count("```") % 2 != 0 else 0.0
+
+        # Coherence: structure/readability proxy.
+        coherence = 2.9
+        coherence += 0.5 if self._has_any_pattern(response, [r"\bfirst\b", r"\bsecond\b", r"\bfinally\b", r"\bstep\b"]) else 0.0
+        coherence += 0.35 if self._has_any_pattern(response, [r"\n-", r"\n\d+\."]) else 0.0
+        coherence += 0.3 if wc >= 40 else -0.4
+        coherence -= 0.9 if "error connecting to ollama" in lower_resp else 0.0
+
+        # Learning support: guided explanation over answer dumping.
+        learning_support = 2.7
+        learning_support += 0.8 if teaches else -0.4
+        learning_support += 0.4 if sets_boundaries else 0.0
+        learning_support += 0.25 if "?" in response else 0.0
+        learning_support -= 1.2 if gives_complete_solution else 0.0
+        learning_support -= 0.7 if "error connecting to ollama" in lower_resp else 0.0
+
         return PedagogicalQualityMetrics(
-            helpfulness_score=4.0,  # Placeholder
-            correctness_score=4.5,  # Placeholder
-            coherence_score=4.2,   # Placeholder
-            learning_support_score=4.3,  # Placeholder
-            response_time_seconds=response_time
+            helpfulness_score=self._clamp_score(helpfulness),
+            correctness_score=self._clamp_score(correctness),
+            coherence_score=self._clamp_score(coherence),
+            learning_support_score=self._clamp_score(learning_support),
+            response_time_seconds=max(0.0, float(response_time or 0.0))
         )
     
     def evaluate_batch(self, 
@@ -108,15 +165,30 @@ Provide ratings in JSON format:
         results = []
         
         for interaction in interactions:
+            response_time = interaction.get('response_time_seconds', interaction.get('response_time', 0.0))
             metrics = self.evaluate_response(
                 question=interaction['question'],
                 response=interaction['response'],
-                response_time=interaction.get('response_time', 0.0)
+                response_time=response_time
             )
             results.append({
                 "question": interaction['question'],
                 "metrics": metrics
             })
+
+        if not results:
+            return {
+                "num_evaluated": 0,
+                "aggregate_metrics": {
+                    "avg_helpfulness": 0.0,
+                    "avg_correctness": 0.0,
+                    "avg_coherence": 0.0,
+                    "avg_learning_support": 0.0,
+                    "avg_response_time": 0.0,
+                    "avg_overall_quality": 0.0
+                },
+                "detailed_results": []
+            }
         
         # Calculate aggregate statistics
         avg_helpfulness = sum(r['metrics'].helpfulness_score for r in results) / len(results)

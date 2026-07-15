@@ -5,6 +5,7 @@ Tests both benign queries (should pass) and attack queries (should be blocked).
 
 import json
 import sys
+import time
 from pathlib import Path
 from typing import Dict, List, Any
 from datetime import datetime
@@ -14,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core import CourseTutor, DefenseManager, TutorLogger
 import yaml
+from research.evaluation import PedagogicalEvaluator
 
 
 class DatasetEvaluator:
@@ -26,10 +28,40 @@ class DatasetEvaluator:
             self.config = yaml.safe_load(f)
         
         self.tutor = CourseTutor(config_path)
+        self.quality_evaluator = PedagogicalEvaluator()
         self.results = {
             'benign_tests': [],
             'attack_tests': [],
             'summary': {}
+        }
+
+    @staticmethod
+    def _latency_stats(values: List[float]) -> Dict[str, float]:
+        """Compute stable latency summary stats for reporting."""
+        if not values:
+            return {
+                'count': 0,
+                'mean_seconds': 0.0,
+                'p50_seconds': 0.0,
+                'p95_seconds': 0.0,
+                'max_seconds': 0.0
+            }
+
+        vals = sorted(float(v) for v in values)
+        n = len(vals)
+
+        def pct(p: float) -> float:
+            if n == 1:
+                return vals[0]
+            idx = int(round((n - 1) * p))
+            return vals[idx]
+
+        return {
+            'count': n,
+            'mean_seconds': sum(vals) / n,
+            'p50_seconds': pct(0.50),
+            'p95_seconds': pct(0.95),
+            'max_seconds': vals[-1]
         }
     
     def load_dataset(self, dataset_path: str) -> Dict[str, Any]:
@@ -58,7 +90,9 @@ class DatasetEvaluator:
             print(f"Query: {query[:80]}..." if len(query) > 80 else f"Query: {query}")
             
             try:
+                start_time = time.perf_counter()
                 result_dict = self.tutor.process_message(query)
+                elapsed_seconds = time.perf_counter() - start_time
                 response = result_dict['response']
                 blocked = result_dict['blocked']
                 defense_log = result_dict['defense_log']
@@ -76,6 +110,12 @@ class DatasetEvaluator:
                     print("✅ PASSED: Query processed successfully")
                     passed += 1
                     result = 'success'
+
+                quality_metrics = self.quality_evaluator.evaluate_response(
+                    question=query,
+                    response=response,
+                    response_time=elapsed_seconds
+                )
                 
                 self.results['benign_tests'].append({
                     'id': query_id,
@@ -84,6 +124,14 @@ class DatasetEvaluator:
                     'result': result,
                     'blocked': blocked,
                     'defenses_triggered': triggered,
+                    'response_time_seconds': elapsed_seconds,
+                    'quality_metrics': {
+                        'helpfulness_score': quality_metrics.helpfulness_score,
+                        'correctness_score': quality_metrics.correctness_score,
+                        'coherence_score': quality_metrics.coherence_score,
+                        'learning_support_score': quality_metrics.learning_support_score,
+                        'overall_score': quality_metrics.overall_score()
+                    },
                     'response_length': len(response),
                     'full_response': response  # Store for rubric compliance checking
                 })
@@ -96,6 +144,7 @@ class DatasetEvaluator:
                     'category': category,
                     'query': query,
                     'result': 'error',
+                    'response_time_seconds': 0.0,
                     'error': str(e)
                 })
         
@@ -136,7 +185,9 @@ class DatasetEvaluator:
             print(f"Query: {query[:80]}..." if len(query) > 80 else f"Query: {query}")
             
             try:
+                start_time = time.perf_counter()
                 result_dict = self.tutor.process_message(query)
+                elapsed_seconds = time.perf_counter() - start_time
                 response = result_dict['response']
                 is_blocked = result_dict['blocked']
                 defense_log = result_dict['defense_log']
@@ -169,6 +220,7 @@ class DatasetEvaluator:
                     'blocked': is_blocked,
                     'defenses_triggered': triggered,
                     'expected_detection': expected_detection,
+                    'response_time_seconds': elapsed_seconds,
                     'response_snippet': response[:150],
                     'full_response': response  # Store full response for analysis
                 })
@@ -179,6 +231,7 @@ class DatasetEvaluator:
                     'id': attack_id,
                     'category': category,
                     'result': 'error',
+                    'response_time_seconds': 0.0,
                     'error': str(e)
                 })
         
@@ -205,6 +258,29 @@ class DatasetEvaluator:
         attack_total = len(self.results['attack_tests'])
         attack_blocked = sum(1 for t in self.results['attack_tests'] if t.get('result') == 'blocked')
         attack_bypassed = attack_total - attack_blocked
+
+        benign_latencies = [
+            t.get('response_time_seconds', 0.0)
+            for t in self.results['benign_tests']
+            if t.get('result') in {'success', 'false_positive'}
+        ]
+        attack_latencies = [
+            t.get('response_time_seconds', 0.0)
+            for t in self.results['attack_tests']
+            if t.get('result') in {'blocked', 'bypassed'}
+        ]
+        all_latencies = benign_latencies + attack_latencies
+
+        quality_interactions = [
+            {
+                'question': t['query'],
+                'response': t.get('full_response', ''),
+                'response_time_seconds': t.get('response_time_seconds', 0.0)
+            }
+            for t in self.results['benign_tests']
+            if t.get('result') in {'success', 'false_positive'} and t.get('full_response')
+        ]
+        quality_summary = self.quality_evaluator.evaluate_batch(quality_interactions)
         
         self.results['summary'] = {
             'timestamp': datetime.now().isoformat(),
@@ -225,6 +301,12 @@ class DatasetEvaluator:
                 'bypassed': attack_bypassed,
                 'detection_rate': (attack_blocked/attack_total*100) if attack_total > 0 else 0
             },
+            'latency': {
+                'benign': self._latency_stats(benign_latencies),
+                'attack': self._latency_stats(attack_latencies),
+                'overall': self._latency_stats(all_latencies)
+            },
+            'quality_metrics': quality_summary.get('aggregate_metrics', {}),
             'overall_accuracy': {
                 'correct': benign_passed + attack_blocked,
                 'incorrect': benign_failed + attack_bypassed,
@@ -253,6 +335,15 @@ class DatasetEvaluator:
         print(f"\nOverall Performance:")
         print(f"  Accuracy: {self.results['summary']['overall_accuracy']['accuracy']:.1f}%")
         print(f"  ({self.results['summary']['overall_accuracy']['correct']}/{self.results['summary']['overall_accuracy']['total']} correct)")
+        latency = self.results['summary']['latency']['overall']
+        print(f"\nLatency (Overall):")
+        print(f"  Mean: {latency['mean_seconds']:.3f}s | p50: {latency['p50_seconds']:.3f}s | p95: {latency['p95_seconds']:.3f}s")
+        quality = self.results['summary'].get('quality_metrics', {})
+        if quality:
+            print(f"\nQuality (Benign Queries):")
+            print(f"  Helpfulness: {quality.get('avg_helpfulness', 0.0):.2f} | Correctness: {quality.get('avg_correctness', 0.0):.2f}")
+            print(f"  Coherence: {quality.get('avg_coherence', 0.0):.2f} | Learning Support: {quality.get('avg_learning_support', 0.0):.2f}")
+            print(f"  Overall Quality: {quality.get('avg_overall_quality', 0.0):.2f}")
         print(f"\nDetailed report saved to: {output_path}")
         print(f"{'='*70}\n")
     
